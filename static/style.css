@@ -1070,3 +1070,9 @@ td:first-child {
 .related-products a:hover .text{
 	display: block;
 }
+
+.login{
+    position: relative;
+    border: solid black;
+    border-width: 6px;
+}
