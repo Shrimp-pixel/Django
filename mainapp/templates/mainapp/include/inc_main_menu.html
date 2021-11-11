@@ -4,6 +4,9 @@
 <li><a href="{% url 'products:products' %}" {% if request.resolver_match.namespace == 'products' %} class='active'{% endif %}>продукты</a></li>
 <li><a href="{% url 'contact' %}" {% if request.resolver_match.url_name == 'contacts' %} class='active'{% endif %}">контакты</a></li>
     {% if user.is_authenticated %}
+    {% if user.is_superuser %}
+        <li><a href="{% url 'adminapp:user_list' %}">Админка</a></li>
+    {% endif %}
         <li><a href="{% url 'auth:edit' %}">{{ user.first_name|default:"Пользователь" }}</a>
         <li><a href="{% url 'auth:logout' %}">Выйти</a></li>
     {% else %}

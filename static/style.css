@@ -121,6 +121,8 @@ html, body {
     height: 125px;
     margin: 15px auto;
     position: relative;
+    display: block;
+    float: left;
 }
 
 .product_record.not_active {
