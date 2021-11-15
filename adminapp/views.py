@@ -1,15 +1,23 @@
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 
 from authapp.forms import ShopUserRegisterFrom
 from authapp.models import ShopUser
-from adminapp.forms import ShopUserAdminEditForm, ProductCategoryEditForm
-from mainapp.models import ProductCategory, Product
+from adminapp.forms import ShopUserAdminEditForm, ProductCategoryEditForm, ProductEditForm
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
 
 # Create your views here.
 from mainapp.models import ProductCategory, Product
+
+
+class AccessMixin:
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -28,13 +36,18 @@ def user_create(request):
     return render(request, 'adminapp/user_form.html', context)
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def users(request):
-    context = {
-        'object_list': ShopUser.objects.all().order_by('-is_active')
+# @user_passes_test(lambda u: u.is_superuser)
+# def users(request):
+#    context = {
+#        'object_list': ShopUser.objects.all().order_by('-is_active')
+#
+#    }
+#    return render(request, 'adminapp/users.html', context)
 
-    }
-    return render(request, 'adminapp/users.html', context)
+class UserListView(AccessMixin, ListView):
+    model = ShopUser
+    template_name = 'adminapp/users.html'
+    ordering = '-is_active'
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -87,13 +100,19 @@ def category_create(request):
     return render(request, 'adminapp/category_form.html', context)
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def categories(request):
-    context = {
-        'object_list': ProductCategory.objects.all().order_by('-is_active')
+# @user_passes_test(lambda u: u.is_superuser)
+# def categories(request):
+#    context = {
+#        'object_list': ProductCategory.objects.all().order_by('-is_active')
+#
+#    }
+#    return render(request, 'adminapp/categories.html', context)
 
-    }
-    return render(request, 'adminapp/categories.html', context)
+
+class CategoryListView(AccessMixin, ListView):
+    model = ProductCategory
+    ordering = '-is_active'
+    template_name = 'adminapp/categories.html'
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -114,7 +133,7 @@ def category_update(request, pk):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-def category_delete(request,pk):
+def category_delete(request, pk):
     current_category = get_object_or_404(ProductCategory, pk=pk)
 
     if request.method == "POST":
@@ -131,43 +150,87 @@ def category_delete(request,pk):
     return render(request, 'adminapp/category_delete.html', context)
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def product_create(request):
-    context = {
-
-    }
-    return render(request, '', context)
-
-
-@user_passes_test(lambda u: u.is_superuser)
-def products(request, pk):
-    context = {
-        'category': get_object_or_404(ProductCategory, pk=pk),
-        'object_list': Product.objects.filter(category__pk=pk).order_by('-is_active'),
-
-    }
-    return render(request, 'adminapp/products.html', context)
+# @user_passes_test(lambda u: u.is_superuser)
+# def product_create(request):
+#    context = {
+#
+#    }
+#    return render(request, '', context)
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def product_update(request):
-    context = {
+class ProductCreateView(AccessMixin, CreateView):
+    model = Product
+    template_name = 'adminapp/product_form.html'
+    form_class = ProductEditForm
 
-    }
-    return render(request, '', context)
-
-
-@user_passes_test(lambda u: u.is_superuser)
-def product_delete(request):
-    context = {
-
-    }
-    return render(request, '', context)
+    def get_success_url(self):
+        return reverse('adminapp:product_list', args=[self.kwargs['pk']])
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def product_detail(request):
-    context = {
+# @user_passes_test(lambda u: u.is_superuser)
+# def products(request, pk):
+#    context = {
+#        'category': get_object_or_404(ProductCategory, pk=pk),
+#        'object_list': Product.objects.filter(category__pk=pk).order_by('-is_active'),
+#
+#    }
+#    return render(request, 'adminapp/products.html', context)
 
-    }
-    return render(request, '', context)
+
+class ProductsListView(AccessMixin, ListView):
+    model = Product
+    template_name = 'adminapp/products.html'
+
+    def get_context_data(self, *args, **kwargs):
+        context_data = super().get_context_data(*args, **kwargs)
+        context_data['category'] = get_object_or_404(ProductCategory, pk=self.kwargs.get('pk'))
+        return context_data
+
+    def get_queryset(self):
+        return Product.objects.filter(category__pk=self.kwargs.get('pk'))
+
+
+# @user_passes_test(lambda u: u.is_superuser)
+# def product_update(request):
+#    context = {
+#
+#    }
+#    return render(request, '', context)
+
+class ProductUpdateView(AccessMixin, UpdateView):
+    model = Product
+    template_name = 'adminapp/product_form.html'
+    form_class = ProductEditForm
+
+    def get_success_url(self):
+        product_item = Product.objects.get(pk=self.kwargs['pk'])
+        return reverse('adminapp:product_list', args=[product_item.category_id])
+
+
+# @user_passes_test(lambda u: u.is_superuser)
+# def product_delete(request):
+#    context = {
+#
+#    }
+#    return render(request, '', context)
+
+class ProductDelete(AccessMixin, DeleteView):
+    model = Product
+    template_name = 'adminapp/product_delete.html'
+
+    def get_success_url(self):
+        product_item = Product.objects.get(pk=self.kwargs['pk'])
+        return reverse('adminapp:product_list', args=[product_item.category_id])
+
+
+# @user_passes_test(lambda u: u.is_superuser)
+# def product_detail(request, pk):
+#    context = {
+#
+#    }
+#    return render(request, '', context)
+
+
+class ProductDetailView(AccessMixin, DetailView):
+    model = Product
+    template_name = 'adminapp/product_detail.html'
