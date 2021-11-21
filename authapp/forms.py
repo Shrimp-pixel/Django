@@ -1,6 +1,11 @@
+import hashlib
+
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django import forms
 from authapp.models import ShopUser
+import pytz
+from datetime import datetime
+from django.conf import settings
 
 
 class ShopUserLoginFrom(AuthenticationForm):
@@ -33,6 +38,16 @@ class ShopUserRegisterFrom(UserCreationForm):
         elif data > 100:
             raise forms.ValidationError('Слишком стар!')
         return data
+
+    def save(self, *args, **kwargs):
+        user = super().save(*args, **kwargs)
+        user.is_active = False
+        user.activate_key = hashlib.sha1(user.email.encode('utf8')).hexdigest()
+
+        user.activate_key_expired = datetime.now(pytz.timezone(settings.TIME_ZONE))
+        user.save()
+
+        return user
 
 
 class ShopUserEditFrom(UserChangeForm):

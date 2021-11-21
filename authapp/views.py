@@ -2,10 +2,17 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django.contrib import auth
 from django.urls import reverse
+from django.core.mail import send_mail
 from authapp.forms import ShopUserLoginFrom, ShopUserRegisterFrom, ShopUserEditFrom
 
 
 # Create your views here.
+from django.conf import settings
+
+from authapp.models import ShopUser
+from authapp.services import send_verify_email
+
+
 def login(request):
     title = 'вход'
 
@@ -42,7 +49,8 @@ def register(request):
         register_form = ShopUserRegisterFrom(request.POST, request.FILES)
 
         if register_form.is_valid():
-            register_form.save()
+            new_user = register_form.save()
+            send_verify_email(new_user)
             return HttpResponseRedirect(reverse('index'))
 
     else:
@@ -71,3 +79,15 @@ def edit(request):
         'edit_form': edit_form
     }
     return render(request, 'authapp/edit.html', context)
+
+
+def verify(request, email, key):
+    user = ShopUser.objects.filter(email=email).first()
+    if user:
+        if user.activate_key == key and not user.is_activate_key_expired():
+            user.activate_user()
+            auth.login(request, user)
+    return render(request, 'authapp/register_result.html')
+
+
+
