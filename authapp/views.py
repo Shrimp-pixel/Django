@@ -3,8 +3,7 @@ from django.http import HttpResponseRedirect
 from django.contrib import auth
 from django.urls import reverse
 from django.core.mail import send_mail
-from authapp.forms import ShopUserLoginFrom, ShopUserRegisterFrom, ShopUserEditFrom
-
+from authapp.forms import ShopUserLoginFrom, ShopUserRegisterFrom, ShopUserEditFrom, ShopUserProfileEditForm
 
 # Create your views here.
 from django.conf import settings
@@ -63,20 +62,24 @@ def register(request):
 
 
 def edit(request):
-    title = 'редактирование'
+    title = 'Редактирование'
     if request.method == 'POST':
 
         edit_form = ShopUserEditFrom(request.POST, request.FILES, instance=request.user)
+        edit_profile_form = ShopUserProfileEditForm(request.POST, instance=request.user.shopuserprofile)
 
-        if edit_form.is_valid():
+        if edit_form.is_valid() and edit_profile_form.is_valid():
             edit_form.save()
             return HttpResponseRedirect(reverse('auth:edit'))
 
     else:
         edit_form = ShopUserEditFrom(instance=request.user)
+        edit_profile_form = ShopUserProfileEditForm(instance=request.user.shopuserprofile)
+
     context = {
         'title': title,
-        'edit_form': edit_form
+        'edit_form': edit_form,
+        'edit_profile_form': edit_profile_form,
     }
     return render(request, 'authapp/edit.html', context)
 
@@ -88,6 +91,3 @@ def verify(request, email, key):
             user.activate_user()
             auth.login(request, user)
     return render(request, 'authapp/register_result.html')
-
-
-

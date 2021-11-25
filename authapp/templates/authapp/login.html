@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+    <div class="" style="padding: 20px">
     <form class="form-horizontal " action="{% url 'auth:login' %}" method="post">
         {% csrf_token %}
         {{ login_form.as_p }}
@@ -11,6 +12,7 @@
         <input type="submit" class="btn btn-primary" value="Войти">
     </form>
         <hr>
-        <a href="{% url 'auth:register' %}">Зарегистрироваться</a>
-
+        <a class="btn btn-link" href="{% url 'auth:register' %}">Зарегистрироваться</a><br>
+        <a class="btn btn-link" href="{% url 'social:begin' 'vk-oauth2' %}?next=/">Вход через VK</a><br>
+    </div>
 {% endblock %}
