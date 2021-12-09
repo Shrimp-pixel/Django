@@ -1,0 +1,24 @@
+{% extends 'adminapp/base.html' %}
+
+{% block content %}
+    <form class="form-horizontal" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Сохранить" class="btn btn-primary col-lg-12">
+    </form>
+    <a href="{% url 'adminapp:user_list' %}" class="btn btn-warning col-lg-12">Назад</a>
+    <script>
+
+    window.onload = function() {
+
+    var inputs = document.getElementsByTagName('input');
+
+    for(var i = 0; i < inputs.length; i++) {
+        if(inputs[i].type.toLowerCase() == 'checkbox') {
+            inputs[i].classList.remove("form-control");
+        }
+    }
+    };
+
+    </script>
+{% endblock %}
