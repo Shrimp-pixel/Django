@@ -1,8 +1,12 @@
 from django.contrib.auth.decorators import user_passes_test
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
+from django.db.models import F
+from django.db import connection
 
 from authapp.forms import ShopUserRegisterFrom
 from authapp.models import ShopUser
@@ -11,6 +15,23 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, D
 
 # Create your views here.
 from mainapp.models import ProductCategory, Product
+
+
+def db_profile_by_type(prefix, type, queries):
+    update_queries = list(filter(lambda x: type in x['sql'], queries))
+    print(f'db_profile {type} for {prefix}:')
+    [print(query['sql']) for query in update_queries]
+
+
+@receiver(pre_save, sender=ProductCategory)
+def product_is_active_update_productcategory_save(sender, instance, **kwargs):
+    if instance.pk:
+        if instance.is_active:
+            instance.product_set.update(is_active=True)
+        else:
+            instance.product_set.update(is_active=False)
+
+        db_profile_by_type(sender, 'UPDATE', connection.queries)
 
 
 class AccessMixin:
@@ -115,21 +136,40 @@ class CategoryListView(AccessMixin, ListView):
     template_name = 'adminapp/categories.html'
 
 
-@user_passes_test(lambda u: u.is_superuser)
-def category_update(request, pk):
-    current_category = get_object_or_404(ProductCategory, pk=pk)
-    if request.method == 'POST':
-        category_form = ProductCategoryEditForm(request.POST, instance=current_category)
+# @user_passes_test(lambda u: u.is_superuser)
+# def category_update(request, pk):
+#    current_category = get_object_or_404(ProductCategory, pk=pk)
+#    if request.method == 'POST':
+#        category_form = ProductCategoryEditForm(request.POST, instance=current_category)
 
-        if category_form.is_valid():
-            category_form.save()
-            return HttpResponseRedirect(reverse('adminapp:category_list'))
-    else:
-        category_form = ProductCategoryEditForm(instance=current_category)
-    context = {
-        'form': category_form,
-    }
-    return render(request, 'adminapp/category_form.html', context)
+#        if category_form.is_valid():
+#            category_form.save()
+#            return HttpResponseRedirect(reverse('adminapp:category_list'))
+#    else:
+#        category_form = ProductCategoryEditForm(instance=current_category)
+#    context = {
+#        'form': category_form,
+#    }
+#    return render(request, 'adminapp/category_form.html', context)
+
+
+class ProductCategoryUpdateView(UpdateView):
+    model = ProductCategory
+    form_class = ProductCategoryEditForm
+    template_name = 'adminapp/product_form.html'
+    success_url = reverse_lazy('adminapp:category_list')
+
+    def get_success_url(self):
+        return reverse('adminapp:category_update', args=[self.kwargs.get('pk')])
+
+    def form_valid(self, form):
+        if 'discount' in form.cleaned_data:
+            discount = form.cleaned_data.get('discount')
+            if discount:
+                self.object.product_set.update(
+                    price=F('price') * (1 - discount / 100.0)
+                )
+        return super().form_valid(form)
 
 
 @user_passes_test(lambda u: u.is_superuser)

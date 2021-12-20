@@ -1,3 +1,5 @@
+from django import forms
+
 from authapp.forms import ShopUserEditFrom
 from authapp.models import ShopUser
 from mainapp.models import ProductCategory, Product
@@ -11,6 +13,8 @@ class ShopUserAdminEditForm(ShopUserEditFrom):
 
 
 class ProductCategoryEditForm(ModelForm):
+    discount = forms.IntegerField(label='скидка', min_value=0, max_value=90, initial=0, required=False)
+
     class Meta:
         model = ProductCategory
         fields = '__all__'
@@ -25,7 +29,7 @@ class ProductCategoryEditForm(ModelForm):
 class ProductEditForm(ModelForm):
     class Meta:
         model = Product
-        #fields = '__all__'
+        # fields = '__all__'
         exclude = ('is_active',)
 
     def __init__(self, *args, **kwargs):
@@ -33,3 +37,5 @@ class ProductEditForm(ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
             field.help_text = ''
+
+

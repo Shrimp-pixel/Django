@@ -14,6 +14,7 @@
 				{% include 'mainapp/include/inc_categories_menu.html' %}
 			</div>
 
+			{% if hot_product is not None %}
 			<div class="details-products">
 				<div class="details-slider">
 					<div class="slider-product">
@@ -50,7 +51,7 @@
 					</div>
 				</div>
 			</div>
-
+			{% endif %}
 			<div class="related">
 				<div class="title clearfix">
 					<h2>Похожие продукты</h2>
