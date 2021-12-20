@@ -65,7 +65,7 @@ def contact(request):
     return render(request, 'mainapp/contact.html', context=context)
 
 
-@cache_page(3600)
+#@cache_page(3600)
 def products(request, pk=None):
     link_menu = get_links_menu()
     if pk is not None:
